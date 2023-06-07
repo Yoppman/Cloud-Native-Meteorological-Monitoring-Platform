@@ -1,5 +1,7 @@
 import psycopg2
-from fastapi import FastAPI
+from fastapi import (
+    FastAPI, APIRouter, Request, HTTPException
+)
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import json
@@ -7,6 +9,24 @@ from crawlers import *
 from pydantic import BaseModel
 from typing import Union
 from datetime import datetime, timedelta
+from prometheus_client import Counter, generate_latest, REGISTRY
+from prometheus_client import CONTENT_TYPE_LATEST
+from prometheus_client import CollectorRegistry
+from fastapi.responses import Response
+from prometheus_client import Histogram
+import time
+
+
+
+new_registry = CollectorRegistry()
+# if REGISTRY.get_sample_value('request_count') is None:
+REQUEST_COUNT = Counter('request_count','App_request_count', ['app_name', 'method', 'endpoint', 'http_status'], registry=new_registry)
+RESPONSE_TIME = Histogram('response_time', 'Response time of requests', ['app_name', 'method', 'endpoint', 'http_status'], registry=new_registry)
+
+
+
+
+
 
 ## clip values
 def clip(number, min, max):
@@ -49,6 +69,18 @@ app.add_middleware(
     allow_methods = ["*"],
     allow_headers = ["*"]
 )
+@app.middleware("http")
+async def count_requests(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    elapsed_time = time.time() - start_time
+    RESPONSE_TIME.labels('fastapi', request.method, request.url.path, response.status_code).observe(elapsed_time)
+    REQUEST_COUNT.labels('fastapi', request.method, request.url.path, response.status_code).inc()
+    return response
+
+@app.get("/metrics")
+async def get_metrics():
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 @app.post("/reservoir_fetch/")
 async def reservoir_fetch(reservoir_item: ReservoirItem):

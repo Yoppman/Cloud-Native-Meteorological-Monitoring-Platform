@@ -1,5 +1,6 @@
 beautifulsoup4==4.12.2
 fastapi==0.96.0
+prometheus-client
 numpy==1.24.3
 pandas==2.0.2
 psycopg2_binary==2.9.6
