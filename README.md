@@ -16,7 +16,7 @@ The application is containerized using Docker Compose and consists of five core 
 - **Container-4 (Electricity)**: Collects and processes electricity data.
 - **Container-5 (Frontend)**: Interacts with the backend containers to display meteorological data to users.
 
-![Architecture Diagram](Container_Architecture.png)
+![Architecture Diagram](backend/Container_Architecture.png)
 
 ## Backend
 
